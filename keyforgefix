@@ -1,0 +1,99 @@
+local function KEYFORGE_TAMPER_CHECK()
+    local function fail(code)
+        error("[SKID] KeyForge check failed: " .. code, 0)
+    end
+
+    if type(typeof) ~= "function" then
+        fail("TYPEOF_MISSING")
+    end
+
+    if typeof(game) ~= "Instance" then
+        fail("GAME_INVALID")
+    end
+
+    if typeof(workspace) ~= "Instance" then
+        fail("WORKSPACE_INVALID")
+    end
+
+    if type(Instance) ~= "table"
+        or type(Instance.new) ~= "function" then
+        fail("INSTANCE_INVALID")
+    end
+
+    if type(task) ~= "table"
+        or type(task.wait) ~= "function" then
+        fail("TASK_INVALID")
+    end
+
+    local ok, players = pcall(function()
+        return game:GetService("Players")
+    end)
+
+    if not ok or not players then
+        fail("PLAYERS_SERVICE_INVALID")
+    end
+
+    local env = _G
+
+    if type(getgenv) == "function" then
+        local envOK, result = pcall(getgenv)
+
+        if envOK and type(result) == "table" then
+            env = result
+        end
+    end
+
+    local function hasFunction(name)
+        return type(env[name]) == "function"
+            or type(_G[name]) == "function"
+    end
+
+    local function requireFunction(name)
+        if not hasFunction(name) then
+            fail("MISSING_API_" .. name)
+        end
+    end
+
+    -- Require one supported HTTP request API.
+    if not (
+        hasFunction("request")
+        or hasFunction("http_request")
+    ) then
+        fail("HTTP_REQUEST_API_MISSING")
+    end
+
+    -- Require one executor identity API.
+    if not (
+        hasFunction("identifyexecutor")
+        or hasFunction("getexecutorname")
+    ) then
+        fail("EXECUTOR_IDENTITY_API_MISSING")
+    end
+
+    -- Enable only the capabilities your script actually uses.
+    local requiredAPIs = {
+        "readfile",
+        "writefile",
+        "hookfunction",
+        "hookmetamethod",
+        "isfile",
+        "isfolder",
+        "makefolder",
+        "delfile",
+        "getgc",
+        "getgenv",
+        "listfiles",
+        "getnamecallmethod",
+        "getcallingscript",
+        "getloadedmodules",
+        "getsenv"
+    }
+
+    for _, name in ipairs(requiredAPIs) do
+        requireFunction(name)
+    end
+
+    return true
+end
+
+return KEYFORGE_TAMPER_CHECK()
